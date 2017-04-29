@@ -358,6 +358,30 @@ local function logprint(...)
 end
 
 local function get(url)
+	GET = {}
+	if (url:find("%?")) then
+		url, args = url:match("^(.-)%?(.+)$")
+		args = args .. "&"
+		while (args:find("&")) do
+			phr, args = args:match("^(.-)&(.*)$")
+			if (phr:find("=")) then
+				local key, value = phr:match("^(.-)=(.-)$")
+				if (key ~= "" and value ~= "") then
+					GET[key] = value
+				end
+			elseif (phr ~= "") then
+				table.insert(GET, phr)
+			end
+		end
+	end
+	if (url == "/") then
+		url = "/" .. default
+	end
+	for _, k in pairs(forbidden) do
+		if url == "/" .. k then
+			return os.date("HTTP/1.1 403 Forbidden\r\nDate: %Y.%m.%d %H:%M:%S\r\nContent-Type: text/html\r\n\r\nForbidden.\r\n")
+		end
+	end
 	local f, err = io.open("." .. url, "rb")
 	if (not f) then
 		return os.date("HTTP/1.1 404 Not Found\r\nDate: %Y.%m.%d %H:%M:%S\r\nContent-Type: text/html\r\n\r\n" .. tostring(err) .. "\r\n")
@@ -398,6 +422,18 @@ end
 
 logprint("Web Server Starting...")
 
+local status, ret = pcall(dofile, "config.conf")
+if (status and type(forbidden) == "table" and type(default) == "string") then
+	logprint("Loaded config.")
+else
+	logprint("Failed to load config.")
+	forbidden = {
+		"main.lua",
+		"config.conf"
+	}
+	default = "index.lua"
+end
+
 local server = socket.tcp()
 server:bind("*", 80)
 server:listen(8)
@@ -431,7 +467,7 @@ while true do
 				if (request == "") then
 					current[i]:send(response)
 					current[i]:close()
-					logprint("remove connection.")
+					logprint("close connection.")
 					remove(current[i])
 					break
 				end
