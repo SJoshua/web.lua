@@ -4,7 +4,8 @@
 -- A single-file web server.
 -- Using lua like php.
 ------------------------------------
-local socket = require("socket")
+socket = require("socket")
+http = require("socket.http")
 
 local fileType = {
 	[".tif"] = "image/tiff",
@@ -361,16 +362,18 @@ local function get(url)
 	GET = {}
 	if (url:find("%?")) then
 		url, args = url:match("^(.-)%?(.+)$")
-		args = args .. "&"
-		while (args:find("&")) do
-			phr, args = args:match("^(.-)&(.*)$")
-			if (phr:find("=")) then
-				local key, value = phr:match("^(.-)=(.-)$")
-				if (key ~= "" and value ~= "") then
-					GET[key] = value
+		if args then
+			args = args .. "&"
+			while (args:find("&")) do
+				phr, args = args:match("^(.-)&(.*)$")
+				if (phr:find("=")) then
+					local key, value = phr:match("^(.-)=(.-)$")
+					if (key ~= "" and value ~= "") then
+						GET[key] = value
+					end
+				elseif (phr ~= "") then
+					table.insert(GET, phr)
 				end
-			elseif (phr ~= "") then
-				table.insert(GET, phr)
 			end
 		end
 	end
@@ -389,7 +392,7 @@ local function get(url)
 	local retType = "text/html"
 	local content = f:read("*a")
 	if (url:find("%.%S-$")) then
-		ext = url:match("(%.%S-)$")
+		ext = url:match("(%.[^%.]-)$")
 		if (ext == ".lua" or ext == ".lsp") then
 			while (content:find("<%?lua.-%?>")) do
 				local source = content:match("<%?lua(.-)%?>")
@@ -408,11 +411,12 @@ local function get(url)
 				else
 					ret = "<b>Running Time Error: " .. tostring(ret) .. "</b>"
 				end
-				content = content:gsub("<%?lua.-%?>", ret, 1)
+				content = content:gsub("<%?lua.-%?>", ret:gsub("%%", "%%%%"), 1)
 			end
 		end
 		if (fileType[ext]) then
 			retType = fileType[ext]
+			logprint("detected retType: ", retType)
 		end
 	end
 	local ret = os.date("HTTP/1.1 200 OK\r\nDate: %Y.%m.%d %H:%M:%S\r\nContent-Type: " .. retType .. "\r\n\r\n")
