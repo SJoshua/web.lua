@@ -72,7 +72,7 @@
 				elseif (not list) then
 				  io.write("Oops! Failed to get list.")
 				else
-				  local reg_exp = [[<h2 class="title">%s*<a href="http://moeimg.net/(.-).html" title="(.-)">]]
+				  local reg_exp = [[<h2 class="title">%s*<a href=http://moeimg.net/(.-).html title=(.-)>]]
 				  while (list:find(reg_exp)) do 
 				    local id, name = list:match(reg_exp)
 					list = list:gsub(reg_exp, "", 1)
@@ -89,8 +89,8 @@
 			  
 			  list = http.request("http://moeimg.net/taglist")
 			  if (list) then
-			    local reg = [[<div class="box_title">([^\n]-)</div>%s*<table>(.-)</table>]]
-				local reg_tag = [[<a href="http://moeimg.net/tag/(.-)">(.-)</a>]]
+			    local reg = [[<div id=tag_cat_.- class=box_title>([^\n]-)</div>%s*<table>(.-)</table>]]
+				local reg_tag = [[<a href=http://moeimg.net/tag/(.-)>(.-)</a>]]
 				while (list:find(reg)) do
 				  local category, tags = list:match(reg)
 				  if (category and tags) then
